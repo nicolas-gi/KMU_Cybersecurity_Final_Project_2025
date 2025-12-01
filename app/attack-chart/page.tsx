@@ -1,17 +1,12 @@
 'use client';
 
+import { ResponsiveBar } from '@nivo/bar';
 import type { CSSProperties } from 'react';
-import { ResponsiveLine } from '@nivo/line';
 
 const attackData = [
-  {
-    id: 'Attacks',
-    data: [
-      { x: 'DDoS', y: 120 },
-      { x: 'Port Scan', y: 185 },
-      { x: 'Brute Force', y: 50 },
-    ],
-  },
+  { attack: 'DDoS', count: 120 },
+  { attack: 'Port Scan', count: 185 },
+  { attack: 'Brute Force', count: 50 },
 ];
 
 const tooltipStyles: CSSProperties = {
@@ -23,13 +18,14 @@ const tooltipStyles: CSSProperties = {
   boxShadow: '0 10px 25px rgba(15, 23, 42, 0.35)',
 };
 
-const AttackLineChart = () => (
+const AttackBarChart = () => (
   <div style={{ height: '360px' }}>
-    <ResponsiveLine
+    <ResponsiveBar
       data={attackData}
+      keys={['count']}
+      indexBy="attack"
       margin={{ top: 30, right: 60, bottom: 70, left: 65 }}
-      xScale={{ type: 'point' }}
-      yScale={{ type: 'linear', min: 0, max: 'auto', stacked: false, reverse: false }}
+      padding={0.3}
       axisBottom={{
         legend: 'Attack Type',
         legendOffset: 50,
@@ -61,67 +57,16 @@ const AttackLineChart = () => (
         },
       }}
       colors={['#f97316']}
-      enableArea
-      areaOpacity={0.15}
-      defs={[
-        {
-          id: 'attackGradient',
-          type: 'linearGradient',
-          colors: [
-            { offset: 0, color: '#f97316' },
-            { offset: 100, color: '#fb923c' },
-          ],
-        },
-      ]}
-      fill={[{ match: { id: 'Attacks' }, id: 'attackGradient' }]}
-      pointSize={10}
-      pointColor={{ theme: 'background' }}
-      pointBorderWidth={3}
-      pointBorderColor={{ from: 'serieColor' }}
-      pointLabelYOffset={-12}
-      enableGridX={false}
+      borderRadius={4}
+      enableLabel={false}
       enableGridY
-      crosshairType="x"
-      enableSlices="x"
-      useMesh
-      curve="monotoneX"
       motionConfig="gentle"
-      tooltip={({ point }) => {
-        const category = (point.data.xFormatted ?? point.data.x) as string;
-        const count = point.data.yFormatted ?? point.data.y;
-        return (
-          <div style={tooltipStyles}>
-            <div style={{ fontWeight: 600 }}>{category}</div>
-            <div>{count} detections</div>
-          </div>
-        );
-      }}
-      legends={[
-        {
-          anchor: 'bottom-right',
-          direction: 'column',
-          justify: false,
-          translateX: 80,
-          translateY: 0,
-          itemsSpacing: 8,
-          itemDirection: 'left-to-right',
-          itemWidth: 80,
-          itemHeight: 20,
-          itemOpacity: 0.75,
-          symbolSize: 12,
-          symbolShape: 'circle',
-          symbolBorderColor: 'rgba(0, 0, 0, .5)',
-          effects: [
-            {
-              on: 'hover',
-              style: {
-                itemBackground: 'rgba(0, 0, 0, .03)',
-                itemOpacity: 1,
-              },
-            },
-          ],
-        },
-      ]}
+      tooltip={({ value, indexValue }) => (
+        <div style={tooltipStyles}>
+          <div style={{ fontWeight: 600 }}>{indexValue}</div>
+          <div>{value} detections</div>
+        </div>
+      )}
     />
   </div>
 );
@@ -134,7 +79,7 @@ export default function AttackChartPage() {
         <p className="mb-8 text-zinc-600 dark:text-zinc-400">
           This chart shows the volume of common attack types logged by the monitoring pipeline.
         </p>
-        <AttackLineChart />
+        <AttackBarChart />
       </div>
     </main>
   );

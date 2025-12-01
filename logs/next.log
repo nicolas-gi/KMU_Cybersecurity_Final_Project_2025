@@ -1,0 +1,62 @@
+
+> final_proj@0.1.0 dev
+> next dev
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   ▲ Next.js 16.0.3 (Turbopack)
+   - Local:         http://localhost:3000
+   - Network:       http://10.163.97.242:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 829ms
+ GET / 200 in 2.9s (compile: 2.8s, render: 144ms)
+ GET / 200 in 65ms (compile: 6ms, render: 59ms)
+ GET / 200 in 48ms (compile: 4ms, render: 44ms)
+ GET /monitoring 200 in 1391ms (compile: 1219ms, render: 172ms)
+ GET /api/ml-health 200 in 276ms (compile: 248ms, render: 29ms)
+ GET /attack-chart 200 in 950ms (compile: 876ms, render: 74ms)
+ GET /api/ml-health 200 in 22ms (compile: 5ms, render: 17ms)
+ POST /api/predict 200 in 174ms (compile: 121ms, render: 53ms)
+ POST /api/predict 200 in 54ms (compile: 4ms, render: 50ms)
+ POST /api/predict 200 in 52ms (compile: 4ms, render: 48ms)
+ POST /api/predict 200 in 52ms (compile: 4ms, render: 49ms)
+ GET /api/ml-health 200 in 19ms (compile: 5ms, render: 13ms)
+ POST /api/predict 200 in 52ms (compile: 3ms, render: 49ms)
+ POST /api/predict 200 in 50ms (compile: 3ms, render: 46ms)
+ POST /api/predict 200 in 52ms (compile: 3ms, render: 49ms)
+ POST /api/predict 200 in 52ms (compile: 5ms, render: 47ms)
+ POST /api/predict 200 in 50ms (compile: 4ms, render: 46ms)
+ POST /api/predict 200 in 50ms (compile: 3ms, render: 47ms)
+ POST /api/predict 200 in 53ms (compile: 3ms, render: 51ms)
+ POST /api/predict 200 in 51ms (compile: 3ms, render: 47ms)
+ POST /api/predict 200 in 50ms (compile: 4ms, render: 46ms)
+ POST /api/predict 200 in 64ms (compile: 3ms, render: 62ms)
+ POST /api/predict 200 in 49ms (compile: 3ms, render: 47ms)
+ POST /api/predict 200 in 50ms (compile: 4ms, render: 46ms)
+ POST /api/predict 200 in 50ms (compile: 3ms, render: 47ms)
+ POST /api/predict 200 in 51ms (compile: 3ms, render: 47ms)
+ POST /api/predict 200 in 49ms (compile: 3ms, render: 46ms)
+ GET /api/ml-health 200 in 14ms (compile: 2ms, render: 12ms)
+ POST /api/predict 200 in 51ms (compile: 4ms, render: 47ms)
+ POST /api/predict 200 in 48ms (compile: 4ms, render: 44ms)
+ POST /api/predict 200 in 50ms (compile: 3ms, render: 47ms)
+ POST /api/predict 200 in 48ms (compile: 3ms, render: 46ms)
+ POST /api/predict 200 in 61ms (compile: 2ms, render: 58ms)
+ POST /api/predict 200 in 59ms (compile: 3ms, render: 56ms)
+ POST /api/predict 200 in 49ms (compile: 3ms, render: 46ms)
+ POST /api/predict 200 in 46ms (compile: 3ms, render: 44ms)
+ POST /api/predict 200 in 49ms (compile: 3ms, render: 46ms)
+ POST /api/predict 200 in 111ms (compile: 3ms, render: 108ms)
+ GET /api/ml-health 200 in 15ms (compile: 3ms, render: 12ms)
+ GET /api/ml-health 200 in 16ms (compile: 3ms, render: 13ms)
+ GET /api/ml-health 200 in 15ms (compile: 3ms, render: 12ms)
+ GET /api/ml-health 200 in 15ms (compile: 3ms, render: 12ms)
+ GET /api/ml-health 200 in 14ms (compile: 2ms, render: 12ms)
+ GET /api/ml-health 200 in 12ms (compile: 3ms, render: 10ms)
+ GET /api/ml-health 200 in 14ms (compile: 4ms, render: 10ms)
+ GET /api/ml-health 200 in 14ms (compile: 3ms, render: 10ms)
+ GET /api/ml-health 200 in 14ms (compile: 3ms, render: 11ms)
+ GET /api/ml-health 200 in 15ms (compile: 2ms, render: 12ms)
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[?25h

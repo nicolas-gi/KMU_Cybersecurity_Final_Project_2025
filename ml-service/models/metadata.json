@@ -1,0 +1,1 @@
+{"model_type": "random_forest", "feature_names": ["duration", "src_bytes", "dst_bytes", "count", "srv_count", "serror_rate", "rerror_rate", "same_srv_rate", "diff_srv_rate"]}

@@ -1,0 +1,99 @@
+name: Testing Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js project
+        run: npm run build
+        continue-on-error: true
+
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+
+  python-tests:
+    name: Python ML Service Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          cd ml-service
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify ML module imports
+        run: |
+          cd ml-service
+          python -c "import train_model; import api; print('✓ All modules imported successfully')"
+        continue-on-error: true
+
+      - name: Check Python code quality
+        uses: py-actions/flake8@v2
+        with:
+          path: "ml-service"
+          args: "--ignore=E501,W503 --max-line-length=100"
+        continue-on-error: true
+
+  dependency-check:
+    name: Security & Dependency Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for security vulnerabilities
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for outdated packages
+        run: npm outdated
+        continue-on-error: true

@@ -2,53 +2,42 @@
 
 ## Network Anomaly Detection Using Machine Learning
 
-A comprehensive ML-powered network intrusion detection system with real-time monitoring, anomaly detection, and interactive dashboards. Built with Next.js, Python, and scikit-learn.
+A machine learning-powered network intrusion detection system using Support Vector Machines (SVM) and Random Forest classifiers to detect cyberattacks in network traffic.
+
+---
+
+## 👥 Team
+
+- **Nicolas Gillard** - Alerting Lead
+- **Mohammed JBILOU** - AI Lead
+- **Frederik Lind** - QA Lead
+- **Lukas W. Blochmann** - Data Analyst
 
 ---
 
 ## 📋 Project Overview
 
-This project implements a machine learning-based network anomaly detection system that identifies cyberattacks (DDoS, port scans, intrusion attempts) in real-time. It combines a Python ML backend with a modern Next.js web dashboard for monitoring and visualization.
+This project implements machine learning models for network anomaly detection using the CICIDS2017 dataset. It includes both binary classification (normal vs. attack) and multi-class classification (specific attack types).
 
-### Key Features
+### Models Implemented
 
-- **🤖 ML-Powered Detection**: Random Forest and Isolation Forest algorithms for anomaly detection
-- **📊 Real-Time Monitoring**: Live dashboard showing normal vs. anomalous traffic
-- **🚨 Intelligent Alerts**: Automatic threat detection with severity classification (Normal, Medium, High, Critical)
-- **📈 Interactive Visualizations**: Dynamic charts for attack patterns and traffic analysis
-- **🎯 Dataset Support**: Compatible with CICIDS2017 and NSL-KDD datasets
-- **⚡ RESTful API**: Python Flask API for ML predictions
-- **🌓 Dark Mode**: Modern UI with automatic theme switching
-- **📱 Responsive Design**: Mobile-friendly interface
+**Binary Classification (SVM):**
+- SVM Model 1: Polynomial kernel (CV: 0.97)
+- SVM Model 2: RBF kernel (CV: 1.00)
 
-### Tech Stack
-
-**Frontend:**
-
-- [Next.js 16](https://nextjs.org/) (React 19) - Web framework
-- TypeScript - Type safety
-- Tailwind CSS 4 - Styling
-- [Nivo](https://nivo.rocks/) - Data visualization
-
-**Backend & ML:**
-
-- Python 3.8+ - ML service
-- scikit-learn - Machine learning algorithms
-- pandas & NumPy - Data processing
-- Flask - API server
-- joblib - Model persistence
-
-### Supported Datasets
-
-1. **NSL-KDD** - Classic intrusion detection dataset
-2. **CICIDS2017** - Comprehensive labeled network traffic (normal + attacks)
+**Multi-class Classification (Random Forest):**
+- RF Model 1: 10 estimators, depth 6 (CV: 0.99)
+- RF Model 2: 15 estimators, depth 8 (CV: 1.00)
 
 ### Attack Types Detected
 
-- **DoS** (Denial of Service): back, land, neptune, pod, smurf, teardrop
-- **Probe** (Reconnaissance): ipsweep, nmap, portsweep, satan
-- **R2L** (Remote to Local): ftp_write, guess_passwd, imap, multihop, phf, spy, warezclient, warezmaster
-- **U2R** (User to Root): buffer_overflow, loadmodule, perl, rootkit
+- BENIGN (Normal traffic)
+- DoS (Denial of Service)
+- DDoS (Distributed Denial of Service)
+- PortScan
+- BruteForce
+- WebAttack
+- Bot
 
 ---
 
@@ -56,373 +45,175 @@ This project implements a machine learning-based network anomaly detection syste
 
 ### Prerequisites
 
-- **Node.js 18+** and npm
-- **Python 3.8+** and pip
-- Git
+- Python 3.8+
+- Node.js 18+ (for frontend, if applicable)
 
-### Automated Setup (Recommended)
+### Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/nicolas-gi/KMU_Cybersecurity_Final_Project_2025.git
-cd final_proj
+cd Final_Project
 
-# Run automated setup script
-chmod +x setup.sh
-./setup.sh
-```
-
-The script will:
-
-- Install Python dependencies
-- Create virtual environment
-- Train the ML model
-- Install Node.js dependencies
-- Set up configuration files
-
-### Manual Setup
-
-## 1. Install Python Dependencies
-
-```bash
+# Install Python dependencies
 cd ml-service
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-## 2. Train the ML Model
-
-```bash
-# Train with mock data (for demo)
-python3 train_model.py
-
-# Or download and use real datasets
-python3 process_datasets.py --download-nsl-kdd
-python3 train_model.py
-```
-
-## 3. Install Node.js Dependencies
-
-```bash
 cd ..
-npm install
 ```
 
-## 4. Configure Environment
+### Train Models
 
-Create `.env.local`:
-
-```env
-ML_API_URL=http://localhost:5000
-NEXT_PUBLIC_API_URL=http://localhost:3000
-```
-
----
-
-## 🎮 Running the Application
-
-### Option 1: Start Everything at Once (Recommended)
+**Important:** Run from the project root directory, not from inside ml-service/
 
 ```bash
-./start.sh
+# From project root
+python3 ml-service/train_model.py
 ```
 
-This single command will:
+This will train all 4 models:
+- 2 SVM models for binary classification
+- 2 Random Forest models for multi-class classification
 
-- Check and train the ML model if needed
-- Start the ML API server on port 5000
-- Start the Next.js dashboard on port 3000
-- Show status and access URLs
-- Display logs in real-time
-
-**To stop all services:**
+**Options:**
 
 ```bash
-./stop.sh
-# Or press Ctrl+C in the terminal running start.sh
+# Train only binary SVM classifiers
+python3 ml-service/train_model.py --binary-only
+
+# Train only multi-class Random Forest classifiers
+python3 ml-service/train_model.py --multiclass-only
 ```
-
-### Option 2: Start Services Separately
-
-**Terminal 1 - ML API Server:**
-
-```bash
-npm run ml:serve
-# Or: cd ml-service && source venv/bin/activate && python3 api.py
-```
-
-**Terminal 2 - Next.js Dashboard:**
-
-```bash
-npm run dev
-```
-
-### Access the Application
-
-- 🏠 **Home**: <http://localhost:3000>
-- 📊 **Real-Time Monitoring**: <http://localhost:3000/monitoring>
-- 📈 **Attack Charts**: <http://localhost:3000/attack-chart>
-- 🔌 **ML API**: <http://localhost:5000/health>
 
 ---
 
 ## 📁 Project Structure
 
-```shell
-final_proj/
-├── app/
-│   ├── page.tsx                    # Home page
-│   ├── monitoring/
-│   │   └── page.tsx                # Real-time monitoring dashboard
-│   ├── attack-chart/
-│   │   └── page.tsx                # Attack visualization
-│   ├── api/
-│   │   ├── predict/route.ts        # Single prediction endpoint
-│   │   ├── predict/batch/route.ts  # Batch prediction endpoint
-│   │   └── ml-health/route.ts      # ML service health check
-│   ├── layout.tsx                  # Root layout
-│   └── globals.css                 # Global styles
+```
+Final_Project/
 ├── ml-service/
-│   ├── train_model.py              # ML model training script
-│   ├── api.py                      # Flask API server
-│   ├── process_datasets.py         # Dataset processing utilities
-│   ├── requirements.txt            # Python dependencies
-│   ├── models/                     # Trained models directory
-│   └── data/                       # Datasets directory
-├── public/                         # Static assets
-├── setup.sh                        # Automated setup script
-├── package.json                    # Node.js dependencies
-└── README.md                       # This file
+│   ├── train_model.py          # Model training script
+│   ├── api.py                  # Flask API server
+│   ├── requirements.txt        # Python dependencies
+│   └── models/                 # Trained models (.pkl files)
+│       ├── svm_binary_model1.pkl
+│       ├── svm_binary_model2.pkl
+│       ├── rf_multiclass_model1.pkl
+│       ├── rf_multiclass_model2.pkl
+│       └── metadata.json
+├── data/
+│   └── CICIDS2017/
+│       ├── PCA_balanced.csv    # Binary classification dataset
+│       └── PCA_processed.csv   # Multi-class dataset
+├── trained_data/               # Original data from Data Analyst
+├── frontend/                   # Next.js dashboard (if applicable)
+└── README.md
 ```
 
 ---
 
-## 🛠️ Development
+## 🛠️ Model Training Details
 
-### Available Scripts
+### Dataset
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Next.js development server |
-| `npm run build` | Build production bundle |
-| `npm start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run ml:train` | Train ML model |
-| `npm run ml:serve` | Start ML API server |
+Uses CICIDS2017 dataset with PCA-transformed features:
+- **PCA_balanced.csv**: 15,000 samples for binary classification
+- **PCA_processed.csv**: 2.5M+ samples for multi-class classification
 
-### ML API Endpoints
+### Training Process
 
-## Health Check
+1. **Binary SVM Models** (PCA_balanced.csv):
+   - Train/test split: 80/20
+   - Cross-validation: 5-fold
+   - Model 1: Polynomial kernel
+   - Model 2: RBF kernel (gamma=0.1)
+
+2. **Multi-class Random Forest** (PCA_processed.csv):
+   - Class filtering: Keep classes with >1950 samples
+   - Sampling: 5000 per class (or all if <2500)
+   - Balancing: SMOTE oversampling
+   - Train/test split: 80/20
+   - Cross-validation: 5-fold
+
+### Expected Results
+
+```
+SVM Model 1: CV=0.97, Accuracy=0.9843
+SVM Model 2: CV=1.00, Accuracy=0.9980
+RF Model 1:  CV=0.99, Accuracy=0.9923
+RF Model 2:  CV=1.00, Accuracy=0.9959
+```
+
+---
+
+## 🔌 API Usage (if running Flask server)
+
+### Start ML API Server
+
+```bash
+cd ml-service
+source venv/bin/activate
+python3 api.py
+```
+
+### Health Check
 
 ```bash
 GET http://localhost:5000/health
 ```
 
-## Single Prediction
+### Prediction
 
 ```bash
 POST http://localhost:5000/predict
 Content-Type: application/json
 
 {
-  "duration": 0.5,
-  "src_bytes": 450,
-  "dst_bytes": 300,
-  "count": 5,
-  "srv_count": 3,
-  "serror_rate": 0.1,
-  "rerror_rate": 0.05,
-  "same_srv_rate": 0.8,
-  "diff_srv_rate": 0.2
-}
-```
-
-**Response:**
-
-```json
-{
-  "is_anomaly": false,
-  "confidence": 0.95,
-  "threat_level": "normal",
-  "prediction": "normal"
-}
-```
-
-### Batch Prediction
-
-```bash
-POST http://localhost:5000/predict/batch
-Content-Type: application/json
-
-{
-  "samples": [
-    { "duration": 0.5, "src_bytes": 450, ... },
-    { "duration": 0.1, "src_bytes": 100, ... }
-  ]
+  "features": [0.5, 450, 300, 5, 3, 0.1, 0.05, 0.8, 0.2, ...]
 }
 ```
 
 ---
 
-## 📊 Using Real Datasets
+## 📊 Dataset Information
 
-### Download NSL-KDD Dataset
+**CICIDS2017** - Canadian Institute for Cybersecurity Intrusion Detection Dataset
 
-```bash
-cd ml-service
-python3 process_datasets.py --download-nsl-kdd
-```
-
-### Process CICIDS2017 Dataset
-
-1. Download CICIDS2017 from: <https://www.unb.ca/cic/datasets/ids-2017.html>
-2. Process the CSV file:
-
-```bash
-cd ml-service
-python3 process_datasets.py --process-cicids path/to/CICIDS2017.csv
-```
-
-### Retrain Model with Real Data
-
-```bash
-cd ml-service
-source venv/bin/activate
-python3 train_model.py
-```
-
-The model will automatically use datasets from the `data/` directory if available.
+- Source: University of New Brunswick
+- Website: https://www.unb.ca/cic/datasets/ids-2017.html
+- Preprocessed with PCA for dimensionality reduction
+- Balanced using SMOTE for multi-class classification
 
 ---
 
-## 🎯 Dashboard Features
+## 🧪 Verification
 
-### Real-Time Monitoring (`/monitoring`)
+To verify your models match the expected results, check:
 
-- **Live Traffic Analysis**: Monitors network traffic every 2 seconds
-- **Anomaly Detection**: ML-powered identification of suspicious patterns
-- **Alert System**: Real-time security alerts with severity levels
-- **Statistics Dashboard**:
-  - Total samples processed
-  - Normal vs. anomalous traffic
-  - Critical alerts count
-- **Interactive Charts**:
-  - Traffic distribution (Normal vs. Anomalies)
-  - Real-time connection volume timeline
+1. Training output shows correct CV scores
+2. Model intercepts match (SVM models)
+3. All 4 model files saved to `ml-service/models/`
+4. `metadata.json` contains accuracy metrics
 
-### Attack Visualization (`/attack-chart`)
-
-- **Category-Based Analysis**: Groups attacks by type (DoS, Probe, R2L, U2R)
-- **Detailed Tooltips**: Shows specific attack types in each category
-- **Statistical Overview**: Summary cards with key metrics
-- **Color-Coded Threats**: Visual severity indicators
+See `TRAINING_VERIFICATION.md` for detailed comparison.
 
 ---
 
-## 🔧 Customization
+## 📝 Notes
 
-### Changing ML Model Type
-
-Edit `ml-service/train_model.py`:
-
-```python
-# Use Random Forest (default)
-detector = NetworkAnomalyDetector(model_type='random_forest')
-
-# Or use Isolation Forest
-detector = NetworkAnomalyDetector(model_type='isolation_forest')
-```
-
-### Adjusting Detection Sensitivity
-
-Modify model parameters in `train_model.py`:
-
-```python
-# Random Forest
-self.model = RandomForestClassifier(
-    n_estimators=100,      # Increase for better accuracy
-    max_depth=10,          # Adjust tree depth
-    random_state=42
-)
-
-# Isolation Forest
-self.model = IsolationForest(
-    contamination=0.1,     # Expected anomaly ratio (0-0.5)
-    random_state=42
-)
-```
-
-### Custom Alert Thresholds
-
-Edit `app/monitoring/page.tsx`:
-
-```typescript
-// Determine threat level based on confidence score
-if (prediction == 1) {
-  if (score > 0.9) threat_level = 'critical';    // Adjust threshold
-  elif (score > 0.7) threat_level = 'high';       // Adjust threshold
-  else threat_level = 'medium';
-}
-```
+- **Critical:** Always run `train_model.py` from the project root, not from `ml-service/`
+- Training uses `random_state=0` for reproducibility
+- Models are saved as `.pkl` files using joblib
+- SMOTE balancing ensures equal representation of attack types
 
 ---
 
-## 🧪 Testing
+## 📚 Resources
 
-### Test ML API
-
-```bash
-# Check health
-curl http://localhost:5000/health
-
-# Test prediction
-curl -X POST http://localhost:5000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "duration": 0.1,
-    "src_bytes": 100,
-    "dst_bytes": 50,
-    "count": 50,
-    "srv_count": 40,
-    "serror_rate": 0.8,
-    "rerror_rate": 0.1,
-    "same_srv_rate": 0.2,
-    "diff_srv_rate": 0.8
-  }'
-```
-
----
-
-## 📝 License
-
-This project is part of the KMU Cybersecurity Final Project 2025.
-
----
-
-## 👥 Contributors
-
-- **Repository**: [nicolas-gi/KMU_Cybersecurity_Final_Project_2025](https://github.com/nicolas-gi/KMU_Cybersecurity_Final_Project_2025)
-
----
-
-## 🔗 Resources
-
-### Documentation
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [scikit-learn Documentation](https://scikit-learn.org/stable/)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-- [Nivo Chart Library](https://nivo.rocks/)
-- [Tailwind CSS](https://tailwindcss.com/docs)
-
-### Datasets
-
-- [NSL-KDD Dataset](https://www.unb.ca/cic/datasets/nsl.html)
 - [CICIDS2017 Dataset](https://www.unb.ca/cic/datasets/ids-2017.html)
+- [scikit-learn Documentation](https://scikit-learn.org/stable/)
+- [SVM Documentation](https://scikit-learn.org/stable/modules/svm.html)
+- [Random Forest Documentation](https://scikit-learn.org/stable/modules/ensemble.html#random-forests)
 
-### Research Papers
-
-- KDD Cup 1999 Data
-- NSL-KDD: A Modern Intrusion Detection Dataset
-- CICIDS2017: A Network Intrusion Detection Dataset
+---

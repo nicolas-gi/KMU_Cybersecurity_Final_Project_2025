@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "sonar": "sonar-scanner",
     "ml:train": "cd ml-service && venv/bin/python train_model.py",
     "ml:serve": "cd ml-service && venv/bin/python api.py"
   },
@@ -25,6 +26,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
+    "sonarqube-scanner": "^4.3.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

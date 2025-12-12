@@ -30,6 +30,8 @@ interface Alert {
     threat_level: string;
     confidence: number;
     message: string;
+    sample: TrafficSample;
+    prediction: PredictionResult;
 }
 
 export default function MonitoringDashboard() {
@@ -37,6 +39,7 @@ export default function MonitoringDashboard() {
     const [mlServiceStatus, setMlServiceStatus] = useState<'checking' | 'healthy' | 'unhealthy'>('checking');
     const [trafficData, setTrafficData] = useState<TrafficSample[]>([]);
     const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
     const [stats, setStats] = useState({
         totalSamples: 0,
         normalTraffic: 0,
@@ -150,6 +153,8 @@ export default function MonitoringDashboard() {
                         threat_level: prediction.threat_level,
                         confidence: prediction.confidence,
                         message: `${prediction.threat_level.toUpperCase()} threat detected with ${(prediction.confidence * 100).toFixed(1)}% confidence`,
+                        sample: sample,
+                        prediction: prediction,
                     };
                     setAlerts((prev) => [alert, ...prev.slice(0, 19)]); // Keep last 20 alerts
                 }
@@ -361,11 +366,12 @@ export default function MonitoringDashboard() {
                             alerts.map((alert) => (
                                 <div
                                     key={alert.id}
-                                    className={`p-4 rounded-lg border-l-4 ${alert.threat_level === 'critical'
-                                            ? 'bg-red-500/10 border-red-500'
+                                    onClick={() => setSelectedAlert(alert)}
+                                    className={`p-4 rounded-lg border-l-4 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg ${alert.threat_level === 'critical'
+                                            ? 'bg-red-500/10 border-red-500 hover:bg-red-500/20'
                                             : alert.threat_level === 'high'
-                                                ? 'bg-orange-500/10 border-orange-500'
-                                                : 'bg-yellow-500/10 border-yellow-500'
+                                                ? 'bg-orange-500/10 border-orange-500 hover:bg-orange-500/20'
+                                                : 'bg-yellow-500/10 border-yellow-500 hover:bg-yellow-500/20'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start">
@@ -377,15 +383,18 @@ export default function MonitoringDashboard() {
                                                 {new Date(alert.timestamp).toLocaleTimeString()}
                                             </div>
                                         </div>
-                                        <div
-                                            className={`px-2 py-1 rounded text-xs font-semibold ${alert.threat_level === 'critical'
-                                                    ? 'bg-red-500 text-white'
-                                                    : alert.threat_level === 'high'
-                                                        ? 'bg-orange-500 text-white'
-                                                        : 'bg-yellow-500 text-black'
-                                                }`}
-                                        >
-                                            {alert.threat_level.toUpperCase()}
+                                        <div className="flex items-center gap-2">
+                                            <div
+                                                className={`px-2 py-1 rounded text-xs font-semibold ${alert.threat_level === 'critical'
+                                                        ? 'bg-red-500 text-white'
+                                                        : alert.threat_level === 'high'
+                                                            ? 'bg-orange-500 text-white'
+                                                            : 'bg-yellow-500 text-black'
+                                                    }`}
+                                            >
+                                                {alert.threat_level.toUpperCase()}
+                                            </div>
+                                            <span className="text-xs text-zinc-400">Click for details</span>
                                         </div>
                                     </div>
                                 </div>
@@ -393,6 +402,182 @@ export default function MonitoringDashboard() {
                         )}
                     </div>
                 </div>
+
+                {/* Alert Detail Modal */}
+                {selectedAlert && (
+                    <div
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+                        onClick={() => setSelectedAlert(null)}
+                    >
+                        <div
+                            className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="sticky top-0 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 p-6">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="text-2xl font-bold mb-2">Alert Details</h3>
+                                        <p className="text-sm text-zinc-500">
+                                            {new Date(selectedAlert.timestamp).toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedAlert(null)}
+                                        className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 text-2xl"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Modal Content */}
+                            <div className="p-6 space-y-6">
+                                {/* Threat Summary */}
+                                <div className="space-y-3">
+                                    <h4 className="text-lg font-semibold">Threat Summary</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Threat Level
+                                            </div>
+                                            <div
+                                                className={`inline-block px-3 py-1 rounded font-semibold ${selectedAlert.threat_level === 'critical'
+                                                        ? 'bg-red-500 text-white'
+                                                        : selectedAlert.threat_level === 'high'
+                                                            ? 'bg-orange-500 text-white'
+                                                            : 'bg-yellow-500 text-black'
+                                                    }`}
+                                            >
+                                                {selectedAlert.threat_level.toUpperCase()}
+                                            </div>
+                                        </div>
+                                        <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Confidence Score
+                                            </div>
+                                            <div className="text-2xl font-bold text-blue-500">
+                                                {(selectedAlert.confidence * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                        <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                                            Prediction
+                                        </div>
+                                        <div className="font-medium">{selectedAlert.prediction.prediction}</div>
+                                    </div>
+                                </div>
+
+                                {/* Traffic Sample Data */}
+                                <div className="space-y-3">
+                                    <h4 className="text-lg font-semibold">Network Traffic Details</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Connection Duration
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {selectedAlert.sample.duration.toFixed(2)}s
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Source Bytes
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {selectedAlert.sample.src_bytes.toFixed(0)} B
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Destination Bytes
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {selectedAlert.sample.dst_bytes.toFixed(0)} B
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Connection Count
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {selectedAlert.sample.count.toFixed(0)}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Service Count
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {selectedAlert.sample.srv_count.toFixed(0)}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                SYN Error Rate
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {(selectedAlert.sample.serror_rate * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                REJ Error Rate
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {(selectedAlert.sample.rerror_rate * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Same Service Rate
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {(selectedAlert.sample.same_srv_rate * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
+                                            <div className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
+                                                Different Service Rate
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {(selectedAlert.sample.diff_srv_rate * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Analysis Indicators */}
+                                <div className="space-y-3">
+                                    <h4 className="text-lg font-semibold">Anomaly Indicators</h4>
+                                    <div className="space-y-2">
+                                        {selectedAlert.sample.serror_rate > 0.5 && (
+                                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm">
+                                                High SYN error rate detected - possible SYN flood attack
+                                            </div>
+                                        )}
+                                        {selectedAlert.sample.diff_srv_rate > 0.5 && (
+                                            <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 text-sm">
+                                                High different service rate - possible port scanning activity
+                                            </div>
+                                        )}
+                                        {selectedAlert.sample.count > 50 && (
+                                            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-sm">
+                                                Unusually high connection count detected
+                                            </div>
+                                        )}
+                                        {selectedAlert.sample.same_srv_rate < 0.3 && selectedAlert.sample.count > 30 && (
+                                            <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 text-sm">
+                                                Low same-service rate with high connections - potential reconnaissance
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </main>
     );

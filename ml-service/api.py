@@ -177,13 +177,4 @@ def get_stats():
 
 
 if __name__ == '__main__':
-    print("="*60)
-    print("🚀 Starting ML API Server")
-    print("="*60)
-    print("Endpoints:")
-    print("  GET  /health          - Health check")
-    print("  POST /predict         - Predict single sample")
-    print("  POST /predict/batch   - Predict multiple samples")
-    print("  GET  /stats           - Model statistics")
-    print("="*60)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=False)

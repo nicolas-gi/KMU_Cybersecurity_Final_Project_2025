@@ -25,8 +25,41 @@ class NetworkAnomalyDetector:
         self.label_encoder = LabelEncoder()
         self.feature_names = []
         
+    def load_cicids_data(self, file_path):
+        """Load and preprocess CICIDS2017 or NSL-KDD processed datasets"""
+        try:
+            print(f"Loading data from: {file_path}")
+            df = pd.read_csv(file_path, low_memory=False)
+
+            # Check if this is a processed dataset with expected columns
+            if 'Attack Type' in df.columns:
+                print(f"✓ Loaded {len(df)} samples from CICIDS/NSL-KDD processed dataset")
+                print(f"  Features: {len(df.columns)} columns")
+
+                # Show attack distribution
+                if 'Attack Type' in df.columns:
+                    print("\n  Attack Type Distribution:")
+                    attack_counts = df['Attack Type'].value_counts()
+                    for attack, count in attack_counts.head(10).items():
+                        print(f"    {attack}: {count:,} ({count/len(df)*100:.2f}%)")
+                    if len(attack_counts) > 10:
+                        print(f"    ... and {len(attack_counts)-10} more types")
+
+                return df
+            else:
+                print(f"⚠ Warning: No 'Attack Type' column found in {file_path}")
+                print(f"  Available columns: {', '.join(df.columns[:5])}...")
+                return None
+
+        except FileNotFoundError:
+            print(f"✗ File {file_path} not found.")
+            return None
+        except Exception as e:
+            print(f"✗ Error loading file: {e}")
+            return None
+
     def load_nsl_kdd_data(self, file_path):
-        """Load and preprocess NSL-KDD dataset"""
+        """Load and preprocess NSL-KDD dataset (kept for backward compatibility)"""
         # NSL-KDD column names
         columns = [
             'duration', 'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes',
@@ -43,7 +76,7 @@ class NetworkAnomalyDetector:
             'dst_host_rerror_rate', 'dst_host_srv_rerror_rate',
             'attack_type', 'difficulty'
         ]
-        
+
         try:
             df = pd.read_csv(file_path, names=columns)
             return df
@@ -122,20 +155,62 @@ class NetworkAnomalyDetector:
         
         return pd.concat([normal] + attacks, ignore_index=True)
     
-    def preprocess_data(self, df):
+    def preprocess_data(self, df, sample_size=None):
         """Preprocess the dataset"""
-        # For mock data, we already have numeric features
-        # In real scenario, would encode categorical features
-        
+        print("\n🔧 Preprocessing data...")
+
+        # Sample data if dataset is too large (for faster training)
+        if sample_size and len(df) > sample_size:
+            print(f"  Sampling {sample_size:,} rows from {len(df):,} total...")
+            # Stratified sampling to maintain attack/normal ratio
+            if 'Attack Type' in df.columns:
+                benign = df[df['Attack Type'] == 'BENIGN'].sample(n=min(int(sample_size*0.8), len(df[df['Attack Type'] == 'BENIGN'])), random_state=42)
+                attack = df[df['Attack Type'] != 'BENIGN'].sample(n=min(int(sample_size*0.2), len(df[df['Attack Type'] != 'BENIGN'])), random_state=42)
+                df = pd.concat([benign, attack], ignore_index=True).sample(frac=1, random_state=42)
+            else:
+                df = df.sample(n=sample_size, random_state=42)
+
+        # Identify label columns to exclude from features
+        label_columns = ['Attack Type', 'attack_type', 'anomaly_bool', 'Attack Number', ' Label']
+
         # Separate features and labels
-        X = df.drop('attack_type', axis=1)
-        y = df['attack_type']
-        
-        # Convert attack types to binary (normal vs attack)
-        y_binary = (y != 'normal').astype(int)
-        
+        if 'Attack Type' in df.columns:
+            y = df['Attack Type']
+            # Convert to binary (BENIGN vs ATTACK)
+            y_binary = (y != 'BENIGN').astype(int)
+        elif 'attack_type' in df.columns:
+            y = df['attack_type']
+            y_binary = (y != 'normal').astype(int)
+        else:
+            print("  ⚠ Warning: No attack type column found, using mock labels")
+            y = pd.Series(['normal'] * len(df))
+            y_binary = pd.Series([0] * len(df))
+
+        # Drop label columns from features
+        X = df.drop(columns=[col for col in label_columns if col in df.columns], errors='ignore')
+
+        # Handle non-numeric columns (encode categorical features)
+        non_numeric_cols = X.select_dtypes(include=['object']).columns
+        if len(non_numeric_cols) > 0:
+            print(f"  Encoding {len(non_numeric_cols)} categorical columns...")
+            for col in non_numeric_cols:
+                X[col] = self.label_encoder.fit_transform(X[col].astype(str))
+
+        # Handle missing values
+        if X.isnull().any().any():
+            print(f"  Filling {X.isnull().sum().sum()} missing values...")
+            X = X.fillna(0)
+
+        # Handle infinite values
+        X = X.replace([np.inf, -np.inf], 0)
+
+        # Store feature names
         self.feature_names = X.columns.tolist()
-        
+
+        print(f"  ✓ Preprocessed: {len(X)} samples, {len(self.feature_names)} features")
+        print(f"  ✓ Normal samples: {(y_binary==0).sum():,} ({(y_binary==0).sum()/len(y_binary)*100:.2f}%)")
+        print(f"  ✓ Attack samples: {(y_binary==1).sum():,} ({(y_binary==1).sum()/len(y_binary)*100:.2f}%)")
+
         return X, y, y_binary
     
     def train(self, X_train, y_train):
@@ -227,43 +302,99 @@ class NetworkAnomalyDetector:
 
 
 def main():
+    import argparse
+    import sys
+
     print("="*60)
     print("Network Anomaly Detection - Model Training")
     print("="*60)
-    
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Train network anomaly detection model')
+    parser.add_argument('--dataset', type=str, default='auto',
+                        help='Path to dataset CSV file, or "auto" to auto-detect')
+    parser.add_argument('--model-type', type=str, default='random_forest',
+                        choices=['random_forest', 'isolation_forest'],
+                        help='Model type to train')
+    parser.add_argument('--sample-size', type=int, default=100000,
+                        help='Number of samples to use (default: 100000, use 0 for all data)')
+    parser.add_argument('--test-split', type=float, default=0.2,
+                        help='Test set split ratio (default: 0.2)')
+
+    args = parser.parse_args()
+
     # Initialize detector
-    detector = NetworkAnomalyDetector(model_type='random_forest')
-    
-    # Load data (will use mock data if dataset not found)
-    print("\n📊 Loading dataset...")
-    df = detector.load_nsl_kdd_data('data/KDDTrain+.txt')
-    print(f"Dataset loaded: {len(df)} samples")
-    
+    detector = NetworkAnomalyDetector(model_type=args.model_type)
+
+    # Auto-detect available datasets
+    if args.dataset == 'auto':
+        dataset_paths = [
+            'data/CICIDS2017/SCA_processed.csv',
+            'data/CICIDS2017/PCA_processed.csv',
+            'data/NSL-KDD/SCA_processed.csv',
+            '../data/CICIDS2017/SCA_processed.csv',
+            '../data/CICIDS2017/PCA_processed.csv',
+            '../data/NSL-KDD/SCA_processed.csv',
+        ]
+
+        dataset_path = None
+        for path in dataset_paths:
+            if os.path.exists(path):
+                dataset_path = path
+                print(f"\n✓ Auto-detected dataset: {path}")
+                break
+
+        if dataset_path is None:
+            print("\n⚠ No dataset found in expected locations:")
+            for path in dataset_paths[:3]:
+                print(f"  - {path}")
+            print("\nCreating mock data for demonstration...")
+            df = detector._create_mock_data()
+        else:
+            df = detector.load_cicids_data(dataset_path)
+    else:
+        # Load specified dataset
+        print(f"\n📊 Loading dataset from: {args.dataset}")
+        if not os.path.exists(args.dataset):
+            print(f"✗ File not found: {args.dataset}")
+            print("Using mock data for demonstration...")
+            df = detector._create_mock_data()
+        else:
+            df = detector.load_cicids_data(args.dataset)
+
+    if df is None:
+        print("✗ Failed to load dataset. Exiting.")
+        sys.exit(1)
+
     # Preprocess
-    print("\n🔧 Preprocessing data...")
-    X, _, y_binary = detector.preprocess_data(df)
-    
+    sample_size = args.sample_size if args.sample_size > 0 else None
+    X, _, y_binary = detector.preprocess_data(df, sample_size=sample_size)
+
     # Split data
+    print("\n📊 Splitting data...")
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y_binary, test_size=0.2, random_state=42, stratify=y_binary
+        X, y_binary, test_size=args.test_split, random_state=42, stratify=y_binary
     )
-    print(f"Training set: {len(X_train)} samples")
-    print(f"Test set: {len(X_test)} samples")
-    print(f"Attack ratio in training: {y_train.sum() / len(y_train):.2%}")
-    
+    print(f"  Training set: {len(X_train):,} samples")
+    print(f"  Test set: {len(X_test):,} samples")
+    print(f"  Attack ratio: {y_train.sum() / len(y_train):.2%}")
+
     # Train
     print("\n🤖 Training model...")
     detector.train(X_train, y_train)
-    
+
     # Evaluate
     print("\n📈 Evaluating model...")
     detector.evaluate(X_test, y_test)
-    
+
     # Save
     print("\n💾 Saving model...")
     detector.save_model('models')
-    
+
     print("\n✅ Training complete!")
+    print(f"   Model type: {args.model_type}")
+    print(f"   Features: {len(detector.feature_names)}")
+    print(f"   Training samples: {len(X_train):,}")
     print("="*60)
 
 

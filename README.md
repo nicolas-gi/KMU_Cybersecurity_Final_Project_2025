@@ -17,6 +17,8 @@ A machine learning-powered network intrusion detection system using Support Vect
 
 ## 📋 Project Overview
 
+You can find the original and processed datasets on this google drive: [datasets](https://drive.google.com/file/d/18hbnETl8FwbYA62mlzlWW0QBPiXzzPbf/view?usp=sharing)
+
 This project implements machine learning models for network anomaly detection using the CICIDS2017 dataset. It includes both binary classification (normal vs. attack) and multi-class classification (specific attack types).
 
 ### Models Implemented
@@ -144,31 +146,6 @@ Watch as the ML model detects and classifies threats in real-time!
 - `/` - Home page with project info
 - `/attack-chart` - Static attack type visualization
 - `/monitoring` - Real-time ML-powered dashboard ⭐
-
----
-
-## 📁 Project Structure
-
-```
-Final_Project/
-├── ml-service/
-│   ├── train_model.py          # Model training script
-│   ├── api.py                  # Flask API server
-│   ├── requirements.txt        # Python dependencies
-│   └── models/                 # Trained models (.pkl files)
-│       ├── svm_binary_model1.pkl
-│       ├── svm_binary_model2.pkl
-│       ├── rf_multiclass_model1.pkl
-│       ├── rf_multiclass_model2.pkl
-│       └── metadata.json
-├── data/
-│   └── CICIDS2017/
-│       ├── PCA_balanced.csv    # Binary classification dataset
-│       └── PCA_processed.csv   # Multi-class dataset
-├── trained_data/               # Original data from Data Analyst
-├── frontend/                   # Next.js dashboard (if applicable)
-└── README.md
-```
 
 ---
 

@@ -12,167 +12,204 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Initialize detector and load model
-detector = NetworkAnomalyDetector()
+BINARY_DETECTOR = NetworkAnomalyDetector()
+MULTICLASS_DETECTOR = NetworkAnomalyDetector()
 
-# Try to load existing model, train if not available
-model_path = 'models'
-if os.path.exists(f'{model_path}/anomaly_model.pkl'):
-    detector.load_model(model_path)
-    print("✓ Model loaded successfully")
+MODEL_PATH = 'models'
+DATA_PATH = '../data/CICIDS2017/PCA_balanced.csv'
+
+if os.path.exists(f'{MODEL_PATH}/metadata.json'):
+    BINARY_DETECTOR.load_model(MODEL_PATH)
+    MULTICLASS_DETECTOR.load_model(MODEL_PATH)
+    print("Models loaded successfully")
 else:
-    print("⚠ No trained model found. Training new model...")
-    # Train a new model with mock data
+    print("No trained model found. Training new models...")
     from train_model import main as train_main
     train_main()
-    detector.load_model(model_path)
-
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'model_type': detector.model_type,
-        'features': len(detector.feature_names)
-    })
+    BINARY_DETECTOR.load_model(MODEL_PATH)
+    MULTICLASS_DETECTOR.load_model(MODEL_PATH)
 
 
 @app.route('/predict', methods=['POST'])
 def predict():
     """
-    Predict if network traffic is anomalous
-    Expected JSON format:
-    {
-        "duration": 0.5,
-        "src_bytes": 450,
-        "dst_bytes": 300,
-        "count": 5,
-        "srv_count": 3,
-        "serror_rate": 0.1,
-        "rerror_rate": 0.05,
-        "same_srv_rate": 0.8,
-        "diff_srv_rate": 0.2
-    }
+    Predict if network traffic is anomalous and classify attack type
     """
     try:
         data = request.json
-        
-        # Convert to DataFrame
         df = pd.DataFrame([data])
-        
-        # Ensure all required features are present
-        for feature in detector.feature_names:
+
+        for feature in BINARY_DETECTOR.feature_names:
             if feature not in df.columns:
                 df[feature] = 0
-        
-        # Reorder columns to match training
-        df = df[detector.feature_names]
-        
-        # Make prediction
-        predictions, scores = detector.predict(df)
-        
-        prediction = int(predictions[0])
-        score = float(scores[0])
-        
-        # Determine threat level
-        if prediction == 1:
-            if score > 0.9:
+
+        df = df[BINARY_DETECTOR.feature_names]
+
+        binary_predictions, binary_scores = BINARY_DETECTOR.predict(df)
+        is_anomaly = int(binary_predictions[0])
+        confidence = float(binary_scores[0])
+
+        if is_anomaly == 1:
+            if MULTICLASS_DETECTOR.rf2:
+                multiclass_predictions, _ = MULTICLASS_DETECTOR.rf2.predict(df), None
+                attack_type = str(multiclass_predictions[0])
+            else:
+                attack_type = 'Unknown Attack'
+
+            if confidence > 0.9:
                 threat_level = 'critical'
-            elif score > 0.7:
+            elif confidence > 0.7:
                 threat_level = 'high'
             else:
                 threat_level = 'medium'
+
+            prediction_label = attack_type
         else:
             threat_level = 'normal'
-        
+            prediction_label = 'Normal'
+
         return jsonify({
-            'is_anomaly': bool(prediction),
-            'confidence': score,
+            'is_anomaly': bool(is_anomaly),
+            'confidence': confidence,
             'threat_level': threat_level,
-            'prediction': 'attack' if prediction == 1 else 'normal'
+            'prediction': prediction_label
         })
-    
+
     except Exception as e:
-        return jsonify({
-            'error': str(e)
-        }), 400
+        print(f"Prediction error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 400
 
 
 @app.route('/predict/batch', methods=['POST'])
 def predict_batch():
     """
     Predict multiple network traffic samples
-    Expected JSON format:
-    {
-        "samples": [
-            {"duration": 0.5, "src_bytes": 450, ...},
-            {"duration": 2.0, "src_bytes": 120, ...}
-        ]
-    }
     """
     try:
         data = request.json
         samples = data.get('samples', [])
-        
+
         if not samples:
             return jsonify({'error': 'No samples provided'}), 400
-        
-        # Convert to DataFrame
+
         df = pd.DataFrame(samples)
-        
-        # Ensure all required features are present
-        for feature in detector.feature_names:
+
+        for feature in BINARY_DETECTOR.feature_names:
             if feature not in df.columns:
                 df[feature] = 0
-        
-        # Reorder columns to match training
-        df = df[detector.feature_names]
-        
-        # Make predictions
-        predictions, scores = detector.predict(df)
-        
+
+        df = df[BINARY_DETECTOR.feature_names]
+
+        binary_predictions, binary_scores = BINARY_DETECTOR.predict(df)
+
+        if MULTICLASS_DETECTOR.rf2:
+            multiclass_predictions, _ = MULTICLASS_DETECTOR.rf2.predict(df), None
+        else:
+            multiclass_predictions = ['Unknown Attack'] * len(df)
+
         results = []
-        for pred, score in zip(predictions, scores):
-            prediction = int(pred)
-            confidence = float(score)
-            
-            if prediction == 1:
+        for i, (is_anomaly, confidence) in enumerate(zip(binary_predictions, binary_scores)):
+            is_anomaly = int(is_anomaly)
+            confidence = float(confidence)
+
+            if is_anomaly == 1:
+                attack_type = str(multiclass_predictions[i])
                 if confidence > 0.9:
                     threat_level = 'critical'
                 elif confidence > 0.7:
                     threat_level = 'high'
                 else:
                     threat_level = 'medium'
+                prediction_label = attack_type
             else:
                 threat_level = 'normal'
-            
+                prediction_label = 'Normal'
+
             results.append({
-                'is_anomaly': bool(prediction),
+                'is_anomaly': bool(is_anomaly),
                 'confidence': confidence,
                 'threat_level': threat_level,
-                'prediction': 'attack' if prediction == 1 else 'normal'
+                'prediction': prediction_label
             })
-        
+
         return jsonify({
             'results': results,
             'total': len(results),
             'anomalies_detected': sum(r['is_anomaly'] for r in results)
         })
-    
+
     except Exception as e:
-        return jsonify({
-            'error': str(e)
-        }), 400
+        return jsonify({'error': str(e)}), 400
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({'status': 'healthy', 'models_loaded': bool(BINARY_DETECTOR.loaded_model)})
 
 
 @app.route('/stats', methods=['GET'])
 def get_stats():
     """Get model statistics"""
     return jsonify({
-        'model_type': detector.model_type,
-        'features': detector.feature_names,
-        'feature_count': len(detector.feature_names)
+        'model_type': BINARY_DETECTOR.model_type,
+        'features': BINARY_DETECTOR.feature_names,
+        'feature_count': len(BINARY_DETECTOR.feature_names)
+    })
+
+
+NORMAL_SAMPLES = None
+ATTACK_SAMPLES = None
+
+def load_traffic_samples():
+    """Load and separate normal and attack traffic samples"""
+    global NORMAL_SAMPLES, ATTACK_SAMPLES
+
+    if NORMAL_SAMPLES is None or ATTACK_SAMPLES is None:
+        if not os.path.exists(DATA_PATH):
+            raise FileNotFoundError(f"Dataset not found at {DATA_PATH}")
+
+        df = pd.read_csv(DATA_PATH)
+
+        NORMAL_SAMPLES = df[df['Attack Type'] == 0].sample(frac=1, random_state=42).reset_index(drop=True)
+        ATTACK_SAMPLES = df[df['Attack Type'] == 1].sample(frac=1, random_state=42).reset_index(drop=True)
+
+        print(f"Loaded {len(NORMAL_SAMPLES)} normal and {len(ATTACK_SAMPLES)} attack samples")
+
+    return NORMAL_SAMPLES, ATTACK_SAMPLES
+
+
+@app.route('/simulate', methods=['GET'])
+def simulate_traffic():
+    """
+    Simulate realistic network traffic with 85% normal, 15% anomalies
+    """
+    normal_samples, attack_samples = load_traffic_samples()
+
+    if normal_samples.empty and attack_samples.empty:
+        return jsonify({'error': 'No dataset available'}), 500
+
+    is_attack = np.random.random() > 0.85
+
+    if is_attack and not attack_samples.empty:
+        sample = attack_samples.sample(n=1, random_state=None).iloc[0]
+        connection_volume = int(np.random.uniform(50, 200))
+    elif not normal_samples.empty:
+        sample = normal_samples.sample(n=1, random_state=None).iloc[0]
+        connection_volume = int(np.random.uniform(10, 80))
+    else:
+        sample = attack_samples.sample(n=1, random_state=None).iloc[0]
+        connection_volume = int(np.random.uniform(50, 200))
+
+    sample_dict = sample.drop('Attack Type').to_dict()
+    sample_dict['count'] = connection_volume
+    actual_is_attack = int(sample['Attack Type'])
+
+    return jsonify({
+        'sample': sample_dict,
+        'is_attack': bool(actual_is_attack)
     })
 
 

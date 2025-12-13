@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dataprepper"
+version = "1.3.47"
+description = "Utility classes for data insection and analysis"
+authors = [{ name = "Lukas W. Blochmann" }]
+license = { text = "MIT" }
+dependencies = [
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "seaborn",
+    "scikit-learn"
+]

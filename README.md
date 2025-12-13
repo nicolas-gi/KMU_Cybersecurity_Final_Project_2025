@@ -51,14 +51,12 @@ This project implements machine learning models for network anomaly detection us
 ### Setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/nicolas-gi/KMU_Cybersecurity_Final_Project_2025.git
 cd Final_Project
 
-# Install Python dependencies
 cd ml-service
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
 cd ..
 ```
@@ -68,7 +66,6 @@ cd ..
 **Important:** Run from the project root directory, not from inside ml-service/
 
 ```bash
-# From project root
 python3 ml-service/train_model.py
 ```
 
@@ -79,10 +76,8 @@ This will train all 4 models:
 **Options:**
 
 ```bash
-# Train only binary SVM classifiers
 python3 ml-service/train_model.py --binary-only
 
-# Train only multi-class Random Forest classifiers
 python3 ml-service/train_model.py --multiclass-only
 ```
 
@@ -144,6 +139,43 @@ SVM Model 2: CV=1.00, Accuracy=0.9980
 RF Model 1:  CV=0.99, Accuracy=0.9923
 RF Model 2:  CV=1.00, Accuracy=0.9959
 ```
+
+---
+
+## 🧪 Running Tests
+
+The project includes comprehensive test coverage for the ML service models and API.
+
+### Run All Tests
+
+```bash
+cd ml-service
+source venv/bin/activate
+./run_tests.sh
+```
+
+The test script will:
+- Run all unit tests with pytest
+- Generate coverage reports
+- Display test results with color-coded output
+- Create an HTML coverage report in `htmlcov/index.html`
+
+### Manual Test Execution
+
+You can also run tests manually:
+
+```bash
+cd ml-service
+python3 -m pytest tests/ -v
+python3 -m pytest tests/ --cov=. --cov-report=term-missing
+```
+
+### Test Coverage
+
+The test suite includes:
+- Model training and prediction tests
+- API endpoint tests (health check, prediction)
+- Configuration validation tests
 
 ---
 
